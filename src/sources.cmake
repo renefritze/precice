@@ -317,7 +317,7 @@ target_sources(preciceInternal
 # Select headers to install
 #
 
-set_property(TARGET precice PROPERTY PUBLIC_HEADER
+set_property(TARGET precice APPEND PROPERTY PUBLIC_HEADER
     src/precice/SolverInterface.hpp
     src/precice/Tooling.hpp
     src/precice/types.hpp

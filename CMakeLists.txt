@@ -262,9 +262,11 @@ add_library(preciceInternal OBJECT)
 set_target_properties(preciceInternal PROPERTIES
   # precice is a C++14 project
   CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED Yes
-  CXX_EXTENSIONS No
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
   POSITION_INDEPENDENT_CODE YES
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN YES
   )
 
 # Setup release override options
@@ -351,6 +353,16 @@ target_include_directories(preciceInternal PUBLIC
   $<INSTALL_INTERFACE:include>
   )
 
+# Setup export header
+include(GenerateExportHeader)
+GENERATE_EXPORT_HEADER(preciceInternal
+  EXPORT_FILE_NAME "src/precice/export.hpp"
+  BASE_NAME PRECICE
+  EXPORT_MACRO_NAME PRECICE_API
+  INCLUDE_GUARD_NAME PRECICE_EXPORT
+  )
+
+
 #
 # Add actual precice library
 #
@@ -363,8 +375,12 @@ target_link_libraries(precice
 set_target_properties(precice PROPERTIES
   VERSION ${preCICE_VERSION}
   SOVERSION ${preCICE_SOVERSION}
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN YES
   )
 copy_target_property(preciceInternal precice INTERFACE_INCLUDE_DIRECTORIES)
+
+set_property(TARGET precice PROPERTY PUBLIC_HEADER ${CMAKE_BINARY_DIR}/src/precice/export.hpp)
 
 # Sources Configuration
 include(${CMAKE_CURRENT_LIST_DIR}/src/sources.cmake)
