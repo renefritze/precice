@@ -255,15 +255,16 @@ endif()
 print_empty()
 print_section("TARGETS & PACKAGES")
 
+
+
 # Add precice as an empty target
-add_library(precice)
+add_library(precice OBJECT)
 set_target_properties(precice PROPERTIES
   # precice is a C++14 project
   CXX_STANDARD 14
   CXX_STANDARD_REQUIRED Yes
   CXX_EXTENSIONS No
-  VERSION ${preCICE_VERSION}
-  SOVERSION ${preCICE_SOVERSION}
+  POSITION_INDEPENDENT_CODE YES
   )
 
 # Setup release override options
@@ -282,7 +283,7 @@ endif()
 
 # Setup Boost
 target_compile_definitions(precice PRIVATE BOOST_ALL_DYN_LINK BOOST_ASIO_ENABLE_OLD_SERVICES BOOST_GEOMETRY_DISABLE_DEPRECATED_03_WARNING)
-target_link_libraries(precice PRIVATE
+target_link_libraries(precice PUBLIC
   Boost::boost
   Boost::filesystem
   Boost::log
@@ -293,48 +294,48 @@ target_link_libraries(precice PRIVATE
   Boost::unit_test_framework
   )
 if(UNIX OR APPLE OR MINGW)
-  target_compile_definitions(precice PRIVATE _GNU_SOURCE)
-  target_link_libraries(precice PRIVATE ${CMAKE_DL_LIBS})
+  target_compile_definitions(precice PUBLIC _GNU_SOURCE)
+  target_link_libraries(precice PUBLIC ${CMAKE_DL_LIBS})
 endif()
 
 # Setup Eigen3
-target_link_libraries(precice PRIVATE Eigen3::Eigen)
-target_compile_definitions(precice PRIVATE "$<$<CONFIG:DEBUG>:EIGEN_INITIALIZE_MATRICES_BY_NAN>")
+target_link_libraries(precice PUBLIC Eigen3::Eigen)
+target_compile_definitions(precice PUBLIC "$<$<CONFIG:DEBUG>:EIGEN_INITIALIZE_MATRICES_BY_NAN>")
 
 # Setup LIBXML2
-target_include_directories(precice PRIVATE ${LIBXML2_INCLUDE_DIR})
-target_link_libraries(precice PRIVATE ${LIBXML2_LIBRARIES})
+target_include_directories(precice PUBLIC ${LIBXML2_INCLUDE_DIR})
+target_link_libraries(precice PUBLIC ${LIBXML2_LIBRARIES})
 
 # Setup JSON
-target_link_libraries(precice PRIVATE JSON fmt-header-only)
+target_link_libraries(precice PUBLIC JSON fmt-header-only)
 
 # Setup MPI
 if (PRECICE_MPICommunication)
-  target_link_libraries(precice PRIVATE MPI::MPI_CXX)
+  target_link_libraries(precice PUBLIC MPI::MPI_CXX)
 else()
-  target_compile_definitions(precice PRIVATE PRECICE_NO_MPI)
+  target_compile_definitions(precice PUBLIC PRECICE_NO_MPI)
 endif()
 
 # Setup PETSC
 if (PRECICE_PETScMapping AND PRECICE_MPICommunication)
-  target_link_libraries(precice PRIVATE PETSc::PETSc)
+  target_link_libraries(precice PUBLIC PETSc::PETSc)
 else()
-  target_compile_definitions(precice PRIVATE PRECICE_NO_PETSC)
+  target_compile_definitions(precice PUBLIC PRECICE_NO_PETSC)
 endif()
 
 # Option Python
 if (PRECICE_PythonActions)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.14")
-    target_link_libraries(precice PRIVATE Python3::NumPy Python3::Python)
+    target_link_libraries(precice PUBLIC Python3::NumPy Python3::Python)
   else()
     # Required for Ubuntu 18.04 LTS
-    target_link_libraries(precice PRIVATE NumPy::NumPy)
-    target_include_directories(precice PRIVATE ${PYTHON_INCLUDE_DIRS})
-    target_link_libraries(precice PRIVATE ${PYTHON_LIBRARIES})
+    target_link_libraries(precice PUBLIC NumPy::NumPy)
+    target_include_directories(precice PUBLIC ${PYTHON_INCLUDE_DIRS})
+    target_link_libraries(precice PUBLIC ${PYTHON_LIBRARIES})
   endif()
-  target_compile_definitions(precice PRIVATE NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION)
+  target_compile_definitions(precice PUBLIC NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION)
 else()
-  target_compile_definitions(precice PRIVATE PRECICE_NO_PYTHON)
+  target_compile_definitions(precice PUBLIC PRECICE_NO_PYTHON)
 endif()
 
 
@@ -353,6 +354,16 @@ target_include_directories(precice PUBLIC
 # Sources Configuration
 include(${CMAKE_CURRENT_LIST_DIR}/src/sources.cmake)
 
+add_library(precicelib)
+target_link_libraries(precicelib
+  PRIVATE
+  precice
+  )
+set_target_properties(precicelib PROPERTIES
+  VERSION ${preCICE_VERSION}
+  SOVERSION ${preCICE_SOVERSION}
+  OUTPUT_NAME libprecice
+  )
 
 #
 # Configuration of Target precice-tools
@@ -388,18 +399,7 @@ IF (BUILD_TESTING)
   add_executable(testprecice "src/testing/main.cpp")
   target_link_libraries(testprecice
     PRIVATE
-    Threads::Threads
     precice
-    Eigen3::Eigen
-    fmt-header-only
-    Boost::boost
-    Boost::filesystem
-    Boost::log
-    Boost::log_setup
-    Boost::program_options
-    Boost::system
-    Boost::thread
-    Boost::unit_test_framework
     )
   set_target_properties(testprecice PROPERTIES
     # precice is a C++14 project
@@ -408,21 +408,20 @@ IF (BUILD_TESTING)
     CXX_EXTENSIONS No
     )
   target_include_directories(testprecice PRIVATE
-    ${preCICE_SOURCE_DIR}/src
     ${preCICE_SOURCE_DIR}/tests
     )
   # Copy needed properties from the lib to the executatble. This is necessary as
   # this executable uses the library source, not only the interface.
-  copy_target_property(precice testprecice COMPILE_DEFINITIONS)
-  copy_target_property(precice testprecice COMPILE_OPTIONS)
+  # copy_target_property(precice testprecice COMPILE_DEFINITIONS)
+  # copy_target_property(precice testprecice COMPILE_OPTIONS)
 
   # Testprecice fully depends on MPI and PETSc.
-  if(PRECICE_MPICommunication)
-    target_link_libraries(testprecice PRIVATE MPI::MPI_CXX)
-  endif()
-  if(PRECICE_MPICommunication AND PRECICE_PETScMapping)
-    target_link_libraries(testprecice PRIVATE PETSc::PETSc)
-  endif()
+  #if(PRECICE_MPICommunication)
+  #  target_link_libraries(testprecice PRIVATE MPI::MPI_CXX)
+  #endif()
+  #if(PRECICE_MPICommunication AND PRECICE_PETScMapping)
+  #  target_link_libraries(testprecice PRIVATE PETSc::PETSc)
+  #endif()
 
   message(STATUS "Including test sources")
   # Test Sources Configuration
@@ -451,7 +450,7 @@ endif()
 # precice - the library
 # precice-tools - the precice binary
 include(GNUInstallDirs)
-install(TARGETS precice precice-tools
+install(TARGETS precicelib precice-tools
   EXPORT preciceTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
