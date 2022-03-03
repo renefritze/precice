@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.10.2)
+cmake_minimum_required (VERSION 3.12)
 project(preCICE VERSION 2.3.0 LANGUAGES CXX)
 set(preCICE_SOVERSION ${preCICE_VERSION_MAJOR})
 
@@ -255,17 +255,8 @@ endif()
 print_empty()
 print_section("TARGETS & PACKAGES")
 
-# Add a dummy to silence add_library warning for cmake < 3.11.
-set(preCICE_DUMMY "")
-if(CMAKE_VERSION VERSION_LESS "3.11")
-  set(preCICE_DUMMY "${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp")
-  if(NOT EXISTS "${preCICE_DUMMY}")
-    file(WRITE "${preCICE_DUMMY}" "")
-  endif()
-endif()
-
 # Add precice as an empty target
-add_library(precice ${preCICE_DUMMY})
+add_library(precice)
 set_target_properties(precice PROPERTIES
   # precice is a C++14 project
   CXX_STANDARD 14
