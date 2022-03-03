@@ -469,8 +469,15 @@ endif()
 # Setup General Install for:
 # precice - the library
 # precice-tools - the precice binary
+
+# preciceInternal needs to be added to the export set if we are building a static library
+set(precice_install_targets precice precice-tools)
+if(NOT BUILD_SHARED_LIBS)
+  set(precice_install_targets ${precice_install_targets} preciceInternal)
+endif()
+
 include(GNUInstallDirs)
-install(TARGETS precice precice-tools
+install(TARGETS ${precice_install_targets}
   EXPORT preciceTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -478,6 +485,7 @@ install(TARGETS precice precice-tools
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/precice
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/precice
   )
+unset(precice_install_targets)
 
 # Install the binprecice link for backwards compatibility
 # TODO remove in 3.0.0
